@@ -720,12 +720,150 @@
         
         .status-active { 
             background: rgba(77,212,182,0.16); 
-            color: var(--accent); 
+            color: var(--accent);
+            border: 1px solid rgba(77,212,182,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .status-active:hover {
+            background: rgba(77,212,182,0.22);
+            border-color: rgba(77,212,182,0.5);
         }
         
         .status-overdue { 
-            background: rgba(255,107,107,0.14); 
-            color: var(--danger); 
+            background: rgba(255,107,107,0.16); 
+            color: var(--danger);
+            border: 1px solid rgba(255,107,107,0.3);
+            animation: pulseOverdue 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseOverdue {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(255,107,107,0.2);
+            }
+            50% {
+                box-shadow: 0 0 8px 0 rgba(255,107,107,0.25);
+            }
+        }
+        
+        .status-damaged {
+            background: linear-gradient(135deg, rgba(255,87,34,0.2), rgba(255,152,0,0.15));
+            color: #ff5722;
+            border: 1.5px solid rgba(255,87,34,0.4);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+            animation: damageAlert 2s ease-in-out infinite;
+        }
+
+        .status-damaged::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        .status-damaged i {
+            font-size: 14px;
+            animation: pulse-icon 1.5s ease-in-out infinite;
+        }
+
+        @keyframes damageAlert {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(255,87,34,0.2);
+            }
+            50% {
+                box-shadow: 0 0 12px 0 rgba(255,87,34,0.3);
+            }
+        }
+
+        @keyframes pulse-icon {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.15);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+
+        /* Damage alert card variant */
+        .damage-alert-card {
+            background: linear-gradient(135deg, rgba(255,87,34,0.08), rgba(255,152,0,0.06));
+            border: 1.5px solid rgba(255,87,34,0.25);
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .damage-alert-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, #ff5722, #ff9800);
+            animation: pulse-border 2s ease-in-out infinite;
+        }
+
+        .damage-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: rgba(255,87,34,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff5722;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .damage-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .damage-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #ff5722;
+            margin-bottom: 3px;
+        }
+
+        .damage-reason {
+            font-size: 12px;
+            color: var(--text-light);
+            line-height: 1.3;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
         }
         
         .status-returned { 
@@ -759,6 +897,45 @@
             }
         }
         
+        /* Pagination */
+        .pagination-simple {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+        .pagination-simple .pagination-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.06);
+            color: var(--text);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .pagination-simple .pagination-btn:hover:not(.pagination-disabled) {
+            background: rgba(77,212,182,0.18);
+            border-color: rgba(77,212,182,0.4);
+            color: var(--accent);
+            transform: translateY(-1px);
+        }
+        .pagination-simple .pagination-disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+        .pagination-simple .pagination-info {
+            font-size: 13px;
+            color: var(--muted);
+            font-weight: 500;
+            padding: 0 8px;
+            user-select: none;
+        }
+        
         /* Light Theme */
         body[data-theme='light'] {
             background: #eef8f6;
@@ -783,6 +960,20 @@
         body[data-theme='light'] .search-bar input {
             background: rgba(0,0,0,0.04);
             border-color: rgba(0,0,0,0.1);
+        }
+        
+        body[data-theme='light'] .pagination-simple .pagination-btn {
+            border-color: rgba(0,0,0,0.1);
+            background: rgba(0,0,0,0.04);
+            color: var(--text);
+        }
+        body[data-theme='light'] .pagination-simple .pagination-btn:hover:not(.pagination-disabled) {
+            background: rgba(47,122,107,0.12);
+            border-color: rgba(47,122,107,0.35);
+            color: var(--accent);
+        }
+        body[data-theme='light'] .pagination-simple .pagination-info {
+            color: var(--muted);
         }
         
         /* Responsive */
@@ -834,9 +1025,9 @@
     {{-- Navigation Header --}}
     <nav class="portal-header">
         <div class="portal-brand">
-            <div class="brand-mark">H</div>
+            <div class="brand-mark">L</div>
             <div>
-                <div class="brand-title">HomeLibrary</div>
+                <div class="brand-title">Libraria</div>
                 <div style="font-size:12px; color:var(--muted)">Your personal library portal</div>
             </div>
         </div>
@@ -858,38 +1049,98 @@
             </div>
             
             <div class="notifications">
+                @php
+                    $unreadCount = 0;
+                    $notifList = collect();
+                    if (auth()->check() && \Illuminate\Support\Facades\Schema::hasTable('notifications')) {
+                        $unreadCount = \App\Models\Notification::where('user_id', auth()->id())
+                            ->whereNull('read_at')->count();
+                        $notifList = \App\Models\Notification::where('user_id', auth()->id())
+                            ->latest()->take(8)->get();
+                    }
+                @endphp
                 <button class="notif-btn" onclick="toggleNotifications()">
                     <i class="fas fa-bell"></i>
-                    @if(!empty($notifications) && count($notifications) > 0)
-                        <span class="notif-count">{{ count($notifications) }}</span>
+                    @if($unreadCount > 0)
+                        <span class="notif-count">{{ $unreadCount }}</span>
                     @endif
                 </button>
                 <div class="notif-dropdown" id="notifDropdown">
-                    <div class="notif-header">Notifications</div>
-                    @forelse($notifications ?? [] as $note)
-                        <div class="notif-item">
-                            <div class="notif-dot"></div>
-                            <div>
-                                <div style="font-weight:700">{{ $note['title'] ?? 'Notification' }}</div>
-                                <div style="color:var(--muted);font-size:13px;margin-top:6px">{{ $note['message'] ?? '' }}</div>
+                    <div class="notif-header" style="display:flex;justify-content:space-between;align-items:center">
+                        <span>Notifications</span>
+                        @if($unreadCount > 0)
+                        <form method="POST" action="{{ route('notifications.read-all') }}" style="display:inline">
+                            @csrf
+                            <button type="submit" style="background:none;border:none;color:var(--accent);font-size:11px;cursor:pointer">Mark all read</button>
+                        </form>
+                        @endif
+                    </div>
+                    @forelse($notifList as $note)
+                        @php
+                            $transactionId = is_array($note->data) ? ($note->data['transaction_id'] ?? null) : null;
+                            $notifLink = route('portal.transactions');
+
+                            if ($note->type === 'payment_success' && $transactionId) {
+                                $notifLink = route('receipt.show', $transactionId);
+                            } elseif ($note->type === 'book_damaged') {
+                                $notifLink = route('portal.fines');
+                            } elseif ($note->type === 'overdue_reminder') {
+                                $notifLink = route('portal.transactions');
+                            } elseif (in_array($note->type, ['borrow_success','return_approved','rejected'], true)) {
+                                $notifLink = route('portal.transactions');
+                            }
+                        @endphp
+
+                        <div class="notif-item"
+                             style="opacity:{{ $note->read_at ? '0.6' : '1' }}"
+                             data-notif-link="{{ $notifLink }}"
+                             onclick="handleNotifClick(event, this)">
+                            <div class="notif-dot" style="background:{{ $note->read_at ? 'var(--muted)' : 'var(--accent)' }}"></div>
+                            <div style="flex:1">
+                                <div style="font-weight:700;font-size:13px"><i class="fas {{ $note->icon }}" style="color:{{ $note->icon_color }};margin-right:6px"></i>{{ $note->title }}</div>
+                                <div style="color:var(--muted);font-size:12px;margin-top:4px">{{ $note->message }}</div>
+                                <div style="color:var(--muted);font-size:11px;margin-top:4px">{{ $note->created_at->diffForHumans() }}</div>
                             </div>
+                            @if(!$note->read_at)
+                            <form method="POST" action="{{ route('notifications.read', $note) }}" style="display:inline">
+                                @csrf @method('PATCH')
+                                <button type="submit"
+                                        style="background:none;border:none;color:var(--accent);font-size:11px;cursor:pointer;padding:4px"
+                                        onclick="event.stopPropagation()">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </form>
+                            @endif
                         </div>
                     @empty
                         <div class="notif-item">
-                            <div class="notif-dot"></div>
-                            <div style="color:var(--muted);font-size:13px">No new notifications.</div>
+                            <div class="notif-dot" style="background:var(--muted)"></div>
+                            <div style="color:var(--muted);font-size:13px">No notifications yet.</div>
                         </div>
                     @endforelse
                 </div>
             </div>
             
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="user-chip">
+            <div class="user-dropdown" style="position:relative">
+                <button class="user-chip" onclick="toggleUserDropdown()">
                     <span>{{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 2)) }}</span>
                     {{ auth()->user()->name ?? 'User' }}
+                    <i class="fas fa-chevron-down" style="font-size:10px;margin-left:4px"></i>
                 </button>
-            </form>
+                <div class="user-dropdown-menu" id="userDropdownMenu" style="display:none;position:absolute;right:0;top:calc(100% + 8px);min-width:200px;background:var(--surface);border:1px solid rgba(255,255,255,0.08);border-radius:16px;box-shadow:var(--shadow);z-index:25;overflow:hidden">
+                    <a href="{{ route('profile') }}" class="dropdown-item" style="display:flex;align-items:center;gap:10px;padding:12px 16px;color:var(--text);font-size:13px;transition:background .15s"><i class="fas fa-user" style="width:16px"></i> My Profile</a>
+                    <a href="{{ route('portal.fines') }}" class="dropdown-item" style="display:flex;align-items:center;gap:10px;padding:12px 16px;color:var(--text);font-size:13px;transition:background .15s">
+                        <i class="fas fa-money-bill-wave" style="width:16px"></i> My Fines
+                    </a>
+                    <div style="height:1px;background:rgba(255,255,255,0.08);margin:4px 0"></div>
+                    <form method="POST" action="{{ route('logout') }}" style="margin:0">
+                        @csrf
+                        <button type="submit" class="dropdown-item" style="display:flex;align-items:center;gap:10px;padding:12px 16px;color:var(--danger);font-size:13px;background:none;border:none;width:100%;cursor:pointer;transition:background .15s">
+                            <i class="fas fa-sign-out-alt" style="width:16px"></i> Log Out
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
     </nav>
     
@@ -903,12 +1154,61 @@
         @endif
         @yield('content')
     </div>
-    
+
+    {{-- Book Details Modal --}}
+    <div class="modal-overlay" id="bookDetailsModal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="bookDetailsModalTitle">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title" id="bookDetailsModalTitle">Book Details</div>
+                    <div id="bookDetailsModalSubtitle" style="color:var(--muted);font-size:13px;margin-top:6px">View full description</div>
+                </div>
+                <button type="button" class="modal-close" onclick="closeBookDetailsModal()">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:18px">
+                    <img id="bookDetailsCover" src="" alt="Book cover" style="width:84px;height:110px;border-radius:18px;object-fit:cover;background:rgba(255,255,255,0.06)">
+                    <div style="flex:1;min-width:0">
+                        <div id="bookDetailsTitle" style="font-size:18px;font-weight:800;margin-bottom:6px;line-height:1.25"></div>
+                        <div id="bookDetailsAuthor" style="color:var(--muted);font-size:13px;margin-bottom:14px"></div>
+                        <div style="color:var(--text);font-size:13px;line-height:1.7">
+                            <div style="color:var(--muted);font-size:12px;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px">Description</div>
+                            <div id="bookDetailsDescription" style="white-space:pre-wrap"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:12px">
+                    <span style="padding:6px 10px;border:1px solid rgba(255,255,255,0.1);border-radius:999px;background:rgba(255,255,255,0.04)" id="bookDetailsCategory"></span>
+                    <span style="padding:6px 10px;border:1px solid rgba(255,255,255,0.1);border-radius:999px;background:rgba(255,255,255,0.04)" id="bookDetailsIsbn"></span>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-outline" onclick="closeBookDetailsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
     {{-- JavaScript --}}
     <script>
         // Notification Dropdown
         function toggleNotifications() {
             document.getElementById('notifDropdown').classList.toggle('open');
+        }
+
+        function handleNotifClick(event, el) {
+            const link = el?.dataset?.notifLink;
+            if (!link) return;
+
+            // If click originated from a form/button (e.g. mark-as-read), stopPropagation already handles it,
+            // but we keep this guard just in case.
+            if (event?.target?.closest('form, button')) return;
+
+            // Close dropdown and navigate
+            document.getElementById('notifDropdown')?.classList.remove('open');
+            window.location.href = link;
         }
         
         document.addEventListener('click', function(event) {
@@ -934,6 +1234,18 @@
             const currentTheme = document.body.dataset.theme;
             setTheme(currentTheme === 'light' ? 'dark' : 'light');
         }
+
+        function toggleUserDropdown() {
+            document.getElementById('userDropdownMenu').style.display =
+                document.getElementById('userDropdownMenu').style.display === 'block' ? 'none' : 'block';
+        }
+
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('userDropdownMenu');
+            if (dropdown && !event.target.closest('.user-dropdown')) {
+                dropdown.style.display = 'none';
+            }
+        });
         
         // Initialize Theme
         (function() {
@@ -943,6 +1255,58 @@
             setTheme(defaultTheme);
         })();
         
+        function openBookDetailsModal(details) {
+            const cover = document.getElementById('bookDetailsCover');
+            const titleEl = document.getElementById('bookDetailsTitle');
+            const authorEl = document.getElementById('bookDetailsAuthor');
+            const descEl = document.getElementById('bookDetailsDescription');
+            const categoryEl = document.getElementById('bookDetailsCategory');
+            const isbnEl = document.getElementById('bookDetailsIsbn');
+
+            if (!cover || !titleEl || !authorEl || !descEl || !categoryEl || !isbnEl) return;
+
+            cover.src = details.cover || '';
+            cover.style.display = cover.src ? 'block' : 'block';
+
+            titleEl.textContent = details.title || '—';
+            authorEl.textContent = details.author || '—';
+            descEl.textContent = details.description || '—';
+
+            categoryEl.textContent = details.category ? `Category: ${details.category}` : '';
+            isbnEl.textContent = details.isbn ? `ISBN: ${details.isbn}` : '';
+
+            document.getElementById('bookDetailsModal').classList.add('open');
+        }
+
+        function closeBookDetailsModal() {
+            document.getElementById('bookDetailsModal').classList.remove('open');
+        }
+
+        document.getElementById('bookDetailsModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closeBookDetailsModal();
+        });
+
+        // Book card click-to-view-details (ignore clicks on buttons/forms/links)
+        document.addEventListener('click', function(event) {
+            const card = event.target.closest('[data-book-details]');
+            if (!card) return;
+
+            if (event.target.closest('button, form, a, input, select, textarea, label')) {
+                return;
+            }
+
+            const details = {
+                title: card.dataset.bookTitle || '',
+                author: card.dataset.bookAuthor || '',
+                description: card.dataset.bookDescription || '',
+                cover: card.dataset.bookCover || '',
+                category: card.dataset.bookCategory || '',
+                isbn: card.dataset.bookIsbn || '',
+            };
+
+            openBookDetailsModal(details);
+        });
+
         // Auto-hide toast messages after 5 seconds
         setTimeout(function() {
             document.querySelectorAll('.toast').forEach(function(toast) {

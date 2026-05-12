@@ -9,3 +9,83 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* Pagination navigation - compact prev/next buttons */
+nav[aria-label='Pagination Navigation'] a[rel='prev'],
+nav[aria-label='Pagination Navigation'] a[rel='next'],
+nav[aria-label='Pagination Navigation'] span[aria-disabled='true'] {
+    min-width: 1.25rem !important;
+    min-height: 1.25rem !important;
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.75rem !important;
+    line-height: 1 !important;
+}
+
+nav[aria-label='Pagination Navigation'] svg,
+nav[aria-label='Pagination Navigation'] a[rel='prev'] svg,
+nav[aria-label='Pagination Navigation'] a[rel='next'] svg {
+    width: 0.75rem !important;
+    height: 0.75rem !important;
+    flex-shrink: 0 !important;
+}
+
+/* Simple custom pagination - arrow buttons */
+.pagination-simple {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination-simple .pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: 1.5px solid rgba(0,0,0,0.12);
+    background: #ffffff;
+    color: #1a2520;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.pagination-simple .pagination-btn:hover:not(.pagination-disabled) {
+    background: #f5f0e8;
+    border-color: #3d7a6e;
+    color: #1a3a3a;
+    transform: translateY(-1px);
+}
+
+.pagination-simple .pagination-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #f5f0e8;
+}
+
+.pagination-simple .pagination-info {
+    font-size: 13px;
+    color: #4a5550;
+    font-weight: 500;
+    padding: 0 8px;
+    user-select: none;
+}
+
+/* Scrollable table wrapper */
+.table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table-wrap table {
+    min-width: 100%;
+}
+

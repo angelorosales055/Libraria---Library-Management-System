@@ -50,12 +50,14 @@
             height: var(--nav-h);
             background: var(--teal-dark);
             display: flex; align-items: center; justify-content: space-between;
-            padding: 0 20px;
+            padding: 0 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            gap: 12px;
         }
         .topnav-brand {
             display: flex; align-items: center; gap: 10px;
             text-decoration: none;
+            flex-shrink: 0;
         }
         .brand-icon {
             width: 32px; height: 32px;
@@ -70,6 +72,7 @@
         }
         .topnav-center {
             flex: 1; max-width: 380px; margin: 0 24px;
+            min-width: 0;
         }
         .search-bar {
             width: 100%; position: relative;
@@ -334,16 +337,126 @@
         .step-text { font-size: 12px; color: var(--text-mid); }
         .step-sub { font-size: 10px; color: var(--text-light); }
 
+        /* ── SIMPLE PAGINATION ── */
+        .pagination-simple {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+        .pagination-simple .pagination-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            border: 1.5px solid rgba(0,0,0,0.12);
+            background: var(--white);
+            color: var(--text-dark);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: var(--shadow);
+        }
+        .pagination-simple .pagination-btn:hover:not(.pagination-disabled) {
+            background: var(--cream-dark);
+            border-color: var(--teal-accent);
+            color: var(--teal-dark);
+            transform: translateY(-1px);
+        }
+        .pagination-simple .pagination-disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background: var(--cream);
+        }
+        .pagination-simple .pagination-info {
+            font-size: 13px;
+            color: var(--text-mid);
+            font-weight: 500;
+            padding: 0 8px;
+            user-select: none;
+        }
+        body[data-theme='dark'] .pagination-simple .pagination-btn {
+            border-color: rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: var(--text-dark);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        body[data-theme='dark'] .pagination-simple .pagination-btn:hover:not(.pagination-disabled) {
+            background: rgba(77,212,182,0.14);
+            border-color: rgba(77,212,182,0.4);
+            color: var(--accent);
+        }
+        body[data-theme='dark'] .pagination-simple .pagination-disabled {
+            background: rgba(255,255,255,0.03);
+        }
+        body[data-theme='dark'] .pagination-simple .pagination-info {
+            color: var(--text-mid);
+        }
+
+        /* ── HAMBURGER MENU ── */
+        .hamburger-btn {
+            display: none; flex-direction: column; justify-content: center;
+            align-items: center; gap: 4px;
+            width: 36px; height: 36px;
+            border: none; background: none;
+            cursor: pointer; padding: 6px;
+        }
+        .hamburger-btn span {
+            display: block; width: 20px; height: 2px;
+            background: var(--white); border-radius: 1px;
+            transition: all .3s;
+        }
+        .hamburger-btn.active span:nth-child(1) {
+            transform: rotate(45deg) translate(8px, 8px);
+        }
+        .hamburger-btn.active span:nth-child(2) {
+            opacity: 0;
+        }
+        .hamburger-btn.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(8px, -8px);
+        }
+
+        /* ── SIDEBAR OVERLAY ── */
+        .sidebar-overlay {
+            display: none;
+        }
+
         /* ── RESPONSIVE ── */
         @media (max-width: 900px) {
             .stat-cards { grid-template-columns: repeat(2, 1fr); }
-            .sidebar { transform: translateX(-100%); transition: transform .25s; }
+            .hamburger-btn { display: flex; }
+            .topnav { padding: 0 8px; }
+            .topnav-center { 
+                flex: 1; max-width: none; margin: 0 8px;
+                display: none;
+            }
+            .topnav-right { gap: 6px; }
+            .brand-name { display: none; }
+            .sidebar { 
+                position: fixed; top: var(--nav-h); left: 0; bottom: 0;
+                width: var(--sidebar-w);
+                transform: translateX(-100%); 
+                transition: transform .25s ease;
+                z-index: 95;
+            }
             .sidebar.open { transform: translateX(0); }
+            .sidebar-overlay { display: none; }
+            .sidebar.open ~ .sidebar-overlay { 
+                display: block;
+                position: fixed; top: var(--nav-h); left: 0; right: 0; bottom: 0;
+                background: rgba(0,0,0,0.3);
+                z-index: 91;
+            }
             .main-content { margin-left: 0; }
         }
         @media (max-width: 600px) {
             .stat-cards { grid-template-columns: 1fr; }
             .main-content { padding: 16px; }
+            .sidebar { width: 70vw; max-width: 250px; }
+            .topnav-right { flex-direction: column; gap: 0; }
+            .role-badge { display: none; }
         }
 
         /* ── MISC ── */
@@ -407,6 +520,30 @@
         .avatar-sage { background: #5a8a6a; color: var(--white); }
         .avatar-rust { background: #8a4a2a; color: var(--white); }
         .avatar-navy { background: #2a4a7a; color: var(--white); }
+
+        /* ── PAGINATION ── */
+        nav[aria-label='Pagination Navigation'] a[rel='prev'],
+        nav[aria-label='Pagination Navigation'] a[rel='next'],
+        nav[aria-label='Pagination Navigation'] span[aria-disabled='true'] {
+            min-width: 1.25rem !important;
+            min-height: 1.25rem !important;
+            width: 1.25rem !important;
+            height: 1.25rem !important;
+            padding: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 0.75rem !important;
+            line-height: 1 !important;
+        }
+
+        nav[aria-label='Pagination Navigation'] svg,
+        nav[aria-label='Pagination Navigation'] a[rel='prev'] svg,
+        nav[aria-label='Pagination Navigation'] a[rel='next'] svg {
+            width: 0.75rem !important;
+            height: 0.75rem !important;
+            flex-shrink: 0 !important;
+        }
     </style>
     @stack('styles')
 </head>
@@ -414,6 +551,11 @@
 
 {{-- TOP NAV --}}
 <nav class="topnav">
+    <button id="hamburgerBtn" class="hamburger-btn" aria-label="Toggle navigation menu" onclick="toggleSidebar()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
     <a href="{{ route('dashboard') }}" class="topnav-brand">
         <div class="brand-icon">L</div>
         <span class="brand-name">Libraria</span>
@@ -455,6 +597,11 @@
         <a href="{{ route('reports.index') }}" class="sidebar-link {{ request()->routeIs('reports.*') ? 'active' : '' }}">
             <i class="fas fa-chart-bar"></i> Reports
         </a>
+@if(auth()->check() && auth()->user()->role === 'admin')
+        <a href="{{ route('activity-log.index') }}" class="sidebar-link {{ request()->routeIs('activity-log.*') ? 'active' : '' }}">
+            <i class="fas fa-list-alt"></i> Activity Log
+        </a>
+        @endif
         @if(auth()->check() && auth()->user()->role === 'admin')
         <a href="{{ route('users.index') }}" class="sidebar-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
             <i class="fas fa-user-cog"></i> User Management
@@ -477,6 +624,9 @@
         </form>
     </div>
 </aside>
+
+{{-- SIDEBAR OVERLAY (Mobile) --}}
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
 {{-- MAIN --}}
 <main class="main-content">
@@ -503,6 +653,21 @@ function showToast(msg, type='success') {
 }
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const hamburger = document.getElementById('hamburgerBtn');
+    sidebar.classList.toggle('open');
+    hamburger.classList.toggle('active');
+}
+// Close sidebar when clicking on a link
+document.querySelectorAll('.sidebar-link').forEach(link => {
+    link.addEventListener('click', () => {
+        if (window.innerWidth <= 900) {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('hamburgerBtn').classList.remove('active');
+        }
+    });
+});
 document.querySelectorAll('.modal-overlay').forEach(m => {
     m.addEventListener('click', e => { if(e.target === m) m.classList.remove('open'); });
 });

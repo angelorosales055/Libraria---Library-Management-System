@@ -6,7 +6,7 @@
     <div>
         <h1 class="page-title">Library Dashboard</h1>
     </div>
-    <a href="{{ route('circulation.create') }}" class="btn btn-gold">
+    <a href="{{ route('circulation.index') }}" class="btn btn-gold">
         <i class="fas fa-plus"></i> New Transaction
     </a>
 </div>
@@ -35,6 +35,16 @@
     </a>
 </div>
 
+{{-- CIRCULATION TREND CHART --}}
+<div class="card mb-6">
+    <div class="card-header">
+        <span class="card-title">Circulation Trend (14 Days)</span>
+    </div>
+    <div class="card-body" style="padding:20px;">
+        <canvas id="circulationChart" style="max-height:300px;"></canvas>
+    </div>
+</div>
+
 {{-- RECENT TRANSACTIONS --}}
 <div class="card mb-6">
     <div class="card-header">
@@ -55,9 +65,19 @@
             </thead>
             <tbody>
                 @forelse($recentTransactions ?? [] as $txn)
+
                 <tr>
                     <td>{{ $txn->member->name ?? '—' }}</td>
-                    <td>{{ $txn->book->title ?? '—' }}</td>
+                    <td style="display:flex;align-items:center;gap:8px;">
+  @if($txn->book?->cover_image)
+    <img src="{{ asset('storage/' . $txn->book->cover_image) }}" alt="Book cover" style="width:28px;height:40px;flex-shrink:0;object-fit:cover;border-radius:4px;">
+  @else
+    <div style="width:28px;height:40px;background:rgba(0,0,0,0.08);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#999;">📖</div>
+  @endif
+  <div style="min-width:0;flex:1;">
+    <div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $txn->book?->title ?? '—' }}">{{ $txn->book->title ?? '—' }}</div>
+  </div>
+                    </td>
                     <td>{{ ucfirst($txn->action) }}</td>
                     <td>{{ $txn->created_at?->format('M j') }}</td>
                     <td>{{ $txn->due_date?->format('M j') ?? '—' }}</td>
@@ -68,6 +88,7 @@
                         </span>
                     </td>
                 </tr>
+
                 @empty
                 <tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:24px">No recent transactions</td></tr>
                 @endforelse
@@ -76,4 +97,80 @@
     </div>
 </div>
 
+
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const circulationCtx = document.getElementById('circulationChart');
+        if (circulationCtx) {
+            const circulationData = @json($circulationData ?? []);
+            const labels = circulationData.map(d => d.date);
+            const data = circulationData.map(d => d.count);
+
+            new Chart(circulationCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Daily Transactions',
+                        data: data,
+                        borderColor: '#c9a84c',
+                        backgroundColor: 'rgba(201, 168, 76, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#c9a84c',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                color: 'var(--text-mid)',
+                                font: { size: 12, family: 'DM Sans' }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: 'var(--text-light)',
+                                stepSize: 1,
+                                font: { size: 11 }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)',
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: 'var(--text-light)',
+                                font: { size: 11 }
+                            },
+                            grid: {
+                                display: false,
+                                drawBorder: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+@endpush

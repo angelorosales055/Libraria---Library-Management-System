@@ -11,8 +11,11 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::whereIn('role', ['admin','librarian'])->latest()->get();
-        return view('user-management.index', compact('users'));
+        $staffUsers = User::whereIn('role', ['admin','librarian'])->latest()->get();
+        $activeMembers = User::where('role', 'user')->where('is_active', true)->latest()->get();
+        $deactivatedMembers = User::where('role', 'user')->where('is_active', false)->latest()->get();
+        $users = $staffUsers->concat($activeMembers);
+        return view('user-management.index', compact('users', 'staffUsers', 'activeMembers', 'deactivatedMembers'));
     }
 
     public function store(Request $request)

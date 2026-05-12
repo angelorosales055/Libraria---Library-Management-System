@@ -65,6 +65,14 @@ class Book extends Model
         });
     }
 
+/**
+     * Scope: filter by category
+     */
+    public function scopeByCategory($q, $categoryId)
+    {
+        return $q->where('category_id', (int) $categoryId);
+    }
+
     public function holds()
     {
         return $this->hasMany(Hold::class);

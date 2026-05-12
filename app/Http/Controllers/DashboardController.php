@@ -39,10 +39,21 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // Circulation trend for last 14 days
+        $circulationData = [];
+        for ($i = 13; $i >= 0; $i--) {
+            $date = now()->subDays($i)->format('Y-m-d');
+            $count = Transaction::whereDate('created_at', $date)->count();
+            $circulationData[] = [
+                'date' => now()->subDays($i)->format('M j'),
+                'count' => $count
+            ];
+        }
+
         return view('dashboard.index', compact(
             'totalBooks', 'newBooksMonth', 'activeMembers', 'newMembersWeek',
             'overdueCount', 'overdueToday', 'checkedOut', 'utilizationRate',
-            'recentTransactions'
+            'recentTransactions', 'circulationData'
         ));
     }
 }

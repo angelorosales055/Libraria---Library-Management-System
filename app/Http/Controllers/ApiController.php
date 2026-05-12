@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Book;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -45,8 +46,51 @@ class ApiController extends Controller
             'id'               => $book->id,
             'title'            => $book->title,
             'author'           => $book->author,
+            'description'      => $book->description,
+            'isbn'             => $book->isbn,
+            'accession_no'     => $book->accession_no,
             'available_copies' => $book->available_copies ?? $book->copies,
             'category'         => $book->category?->name,
+            'loan_period_days' => $book->category?->loan_period_days ?? 14,
+        ]);
+    }
+
+    public function transactionDetails(Request $request, $id)
+    {
+        $txn = Transaction::with(['book.category', 'member'])->findOrFail($id);
+        
+        if (auth()->user()->role === 'user' && $txn->member_id !== auth()->id()) {
+            abort(403);
+        }
+
+        return response()->json([
+            'id' => $txn->id,
+            'status' => $txn->status,
+            'action' => $txn->action,
+            'issued_date' => $txn->issued_date?->format('M j, Y g:i A'),
+            'due_date' => $txn->due_date?->format('M j, Y g:i A'),
+            'returned_date' => $txn->returned_date?->format('M j, Y g:i A'),
+            'fine' => (float) ($txn->fine ?? 0),
+            'computed_fine' => (float) $txn->computed_fine,
+            'outstanding_fine' => (float) $txn->outstanding_fine,
+            'is_pending_fine' => (bool) $txn->is_pending_fine,
+            'fine_paid' => (bool) $txn->fine_paid,
+            'renewal_count' => $txn->renewal_count,
+            'max_renewals' => $txn->max_renewals,
+            'notes' => $txn->notes,
+            'member' => [
+                'name' => $txn->member?->name,
+                'email' => $txn->member?->email,
+                'member_id' => $txn->member?->member_id,
+            ],
+            'book' => [
+                'title' => $txn->book?->title,
+                'author' => $txn->book?->author,
+                'isbn' => $txn->book?->isbn,
+                'accession_no' => $txn->book?->accession_no,
+                'category' => $txn->book?->category?->name,
+                'description' => $txn->book?->description,
+            ],
         ]);
     }
 }

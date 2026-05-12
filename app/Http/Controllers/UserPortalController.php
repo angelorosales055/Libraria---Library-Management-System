@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Book;
 use App\Models\Category;
+use App\Models\Notification;
 use App\Models\Transaction;
-use App\Models\User;
+use App\Models\ActivityLog;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class UserPortalController extends Controller
 {
@@ -31,9 +34,8 @@ class UserPortalController extends Controller
         $overdueCount = Transaction::where('member_id', auth()->id())
             ->where('status', 'overdue')
             ->count();
-        $outstandingFees = Transaction::where('member_id', auth()->id())
-            ->where('fine_paid', false)
-            ->sum('fine');
+        $user = auth()->user();
+        $outstandingFees = $user->outstanding_fine;
         $totalTransactions = Transaction::where('member_id', auth()->id())
             ->count();
         $notifications = $this->portalNotifications();
@@ -74,33 +76,168 @@ class UserPortalController extends Controller
         return view('portal.collection', compact('books', 'categories', 'notifications'));
     }
 
-    public function transactions()
+    public function transactions(Request $request)
     {
         $this->ensureUser();
 
         $userId = auth()->id();
-        $activeBorrowings = Transaction::where('member_id', $userId)
-            ->whereIn('status', ['active', 'overdue'])
-            ->with('book')
-            ->get();
+        $search = $request->get('search');
+        $filter = $request->get('filter', 'all');
 
-        $history = Transaction::where('member_id', $userId)
-            ->where('status', 'returned')
-            ->with('book')
-            ->latest()
-            ->get();
+        $baseQuery = function ($statuses) use ($userId, $search) {
+            return Transaction::where('member_id', $userId)
+                ->whereIn('status', $statuses)
+                ->when($search, function ($q) use ($search) {
+                    return $q->whereHas('book', function ($bq) use ($search) {
+                        $bq->where('title', 'like', '%' . $search . '%')
+                           ->orWhere('author', 'like', '%' . $search . '%');
+                    });
+                })
+                ->with('book')
+                ->latest();
+        };
+
+        $activeBorrowings = $baseQuery(['active', 'overdue'])->get();
+        $pendingRequests = $baseQuery(['pending', 'requested', 'renew_requested'])->get();
+        $rejectedRequests = $baseQuery(['rejected'])->get();
+        $history = $baseQuery(['returned'])->get();
 
         $overdueCount = Transaction::where('member_id', $userId)
             ->where('status', 'overdue')
             ->count();
 
-        $outstandingFees = Transaction::where('member_id', $userId)
-            ->where('status', 'returned')
-            ->where('fine_paid', false)
-            ->sum('fine');
+        $outstandingFees = auth()->user()->outstanding_fine;
 
         $notifications = $this->portalNotifications();
-        return view('portal.transactions', compact('activeBorrowings', 'history', 'notifications', 'overdueCount', 'outstandingFees'));
+        return view('portal.transactions', compact(
+            'activeBorrowings',
+            'pendingRequests',
+            'rejectedRequests',
+            'history',
+            'notifications',
+            'overdueCount',
+            'outstandingFees',
+            'search',
+            'filter'
+        ));
+    }
+
+    public function fines()
+    {
+        $this->ensureUser();
+
+        $pendingFines = Transaction::where('member_id', auth()->id())
+            ->where('fine_paid', false)
+            ->where(function ($query) {
+                $query->where('fine', '>', 0)
+                      ->orWhere(function ($q) {
+                          $q->whereNull('returned_date')
+                            ->whereNotNull('due_date')
+                            ->whereIn('status', ['active', 'overdue'])
+                            ->whereDate('due_date', '<', today());
+                      });
+            })
+            ->with('book')
+            ->latest()
+            ->get();
+
+        $paidFines = Transaction::where('member_id', auth()->id())
+            ->where('fine_paid', true)
+            ->where('fine', '>', 0)
+            ->with('book')
+            ->latest()
+            ->get();
+
+        $totalOutstanding = max(0, $pendingFines->sum(fn ($txn) => $txn->outstanding_fine));
+        $totalPaid = max(0, $paidFines->sum('fine'));
+
+        $notifications = $this->portalNotifications();
+        return view('portal.fines', compact('pendingFines', 'paidFines', 'totalOutstanding', 'totalPaid', 'notifications'));
+    }
+
+    public function payFine(Request $request, Transaction $txn)
+    {
+        $this->ensureUser();
+
+        if ($txn->member_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'payment_method' => 'required|in:cash,gcash,paymaya',
+            'contact_number' => 'nullable|digits:11',
+        ]);
+
+        if (in_array($request->payment_method, ['gcash', 'paymaya']) && !$request->filled('contact_number')) {
+            return back()->with('error', 'Contact number is required for digital payments.');
+        }
+
+        if ($txn->fine_paid) {
+            return back()->with('error', 'This fine has already been paid.');
+        }
+
+        $txn->loadMissing('book');
+        $fineAmount = $txn->outstanding_fine;
+
+        if ($fineAmount <= 0) {
+            return back()->with('error', 'There is no outstanding fine for this transaction.');
+        }
+
+        if ($request->payment_method === 'cash') {
+            $notes = trim(($txn->notes ?? '') .
+                ($request->filled('contact_number') ? "\n[Cash contact: {$request->contact_number}]" : '')
+            );
+
+            if ($notes !== ($txn->notes ?? '')) {
+                $txn->update(['notes' => $notes]);
+            }
+
+            DB::transaction(function () use ($txn, $fineAmount) {
+                $txn->completeFinePayment('cash');
+
+                Notification::create([
+                    'user_id' => auth()->id(),
+                    'type' => 'payment_success',
+                    'title' => 'Cash Payment Recorded',
+                    'message' => "Cash payment of ₱" . number_format($fineAmount, 2) . " for {$txn->book?->title} was successfully recorded.",
+                    'data' => ['transaction_id' => $txn->id, 'amount' => $fineAmount],
+                ]);
+
+                ActivityLog::log(
+                    auth()->id(),
+                    'payment',
+                    "Completed cash payment of ₱" . number_format($fineAmount, 2) . " for TXN-{$txn->id}",
+                    'success'
+                );
+            });
+
+            return redirect()->route('portal.fines')
+                ->with('toast_success', 'Cash payment of ₱' . number_format($fineAmount, 2) . ' has been recorded.');
+        }
+
+        $reference = 'PAY-' . strtoupper($request->payment_method) . '-' . now()->format('YmdHis') . '-' . $txn->id;
+        $notes = trim(($txn->notes ?? '') .
+            ($request->filled('contact_number') ? "\n[Payment contact: {$request->contact_number}]" : '')
+        );
+
+        $txn->update([
+            'paymongo_reference' => $reference,
+            'payment_method' => $request->payment_method,
+            'notes' => $notes,
+        ]);
+
+        ActivityLog::log(
+            auth()->id(),
+            'payment',
+            "Initiated {$request->payment_method} payment of ₱" . number_format($fineAmount, 2) . " for TXN-{$txn->id}",
+            'pending'
+        );
+
+        return redirect()->route('paymongo.checkout', [
+            'txn' => $txn->id,
+            'method' => $request->payment_method,
+            'contact_number' => $request->contact_number,
+        ]);
     }
 
     public function borrow(Request $request, Book $book)
@@ -128,36 +265,33 @@ class UserPortalController extends Controller
 
         if (Transaction::where('member_id', $user->id)
             ->where('book_id', $book->id)
-            ->whereIn('status', ['active', 'overdue'])
+            ->whereIn('status', ['active', 'overdue', 'pending', 'requested'])
             ->exists()) {
-            return back()->with('error', 'You already have this book checked out.');
+            return back()->with('error', 'You already have a request or checkout for this book.');
         }
 
         Transaction::create([
-            'member_id'   => $user->id,
-            'book_id'     => $book->id,
-            'issued_by'   => $user->id,
-            'action'      => 'checkout',
-            'status'      => 'active',
-            'issued_date' => today(),
-            'due_date'    => $data['due_date'],
-            'fine'        => 0,
-            'fine_paid'   => false,
-            'notes'       => $data['notes'] ?? null,
+            'member_id'    => $user->id,
+            'book_id'      => $book->id,
+            'issued_by'    => $user->id,
+            'action'       => 'checkout',
+            'status'       => 'pending',
+            'issued_date'  => today(),
+            'due_date'     => $data['due_date'],
+            'fine'         => 0,
+            'fine_paid'    => false,
+            'notes'        => $data['notes'] ?? null,
             'max_renewals' => 2,
         ]);
 
-        $book->decrement('available_copies');
-
         return redirect()->route('portal.transactions')
-            ->with('toast_success', 'Success! Your borrow has been confirmed and is now visible in your transactions.');
+            ->with('toast_success', 'Success! Your request has been submitted for staff approval.');
     }
 
     protected function placeHold(Book $book)
     {
         $user = auth()->user();
 
-        // Check if already has hold
         if (\App\Models\Hold::where('user_id', $user->id)->where('book_id', $book->id)->where('status', '!=', 'expired')->exists()) {
             return back()->with('error', 'You already have a hold on this book.');
         }
@@ -188,7 +322,7 @@ class UserPortalController extends Controller
             ->get();
 
         foreach ($overdue as $txn) {
-            $days = $today->diffInDays($txn->due_date);
+            $days = $today->diffInDays($txn->due_date, true);
             $notifications[] = [
                 'type' => 'overdue',
                 'title' => 'Overdue book',
@@ -207,12 +341,29 @@ class UserPortalController extends Controller
             ->get();
 
         foreach ($dueSoon as $txn) {
-            $days = $today->diffInDays($txn->due_date);
+            $days = $today->diffInDays($txn->due_date, true);
             $notifications[] = [
                 'type' => 'due_soon',
                 'title' => 'Due soon',
                 'message' => "{$txn->book?->title} is due in {$days} day" . ($days === 1 ? '' : 's'),
                 'date' => $txn->due_date->format('M j'),
+            ];
+        }
+
+        $rejected = Transaction::with('book')
+            ->where('member_id', $userId)
+            ->where('status', 'rejected')
+            ->where('updated_at', '>=', $today->subDays(7))
+            ->latest()
+            ->take(3)
+            ->get();
+
+        foreach ($rejected as $txn) {
+            $notifications[] = [
+                'type' => 'rejected',
+                'title' => 'Request rejected',
+                'message' => "Your request for {$txn->book?->title} was rejected by staff",
+                'date' => $txn->updated_at->format('M j'),
             ];
         }
 
@@ -236,23 +387,96 @@ class UserPortalController extends Controller
         return array_slice($notifications, 0, 5);
     }
 
-    public function renew(Request $request, Transaction $transaction)
+    public function requestRenew(Request $request, Transaction $origTxn)
     {
         $this->ensureUser();
 
-        if ($transaction->member_id !== auth()->id()) {
+        if ($origTxn->member_id !== auth()->id()) {
             abort(403);
         }
 
-        if (!$transaction->canRenew()) {
-            return back()->with('error', 'This book cannot be renewed.');
+        if (!$origTxn->canRequestRenew()) {
+            return back()->with('error', 'Cannot request renewal for this book. Already requested or not eligible.');
         }
 
-        if ($transaction->renew()) {
-            return back()->with('toast_success', "Book renewed. New due date: {$transaction->due_date->format('M j, Y')}");
+        $loanDays = $origTxn->book->category->loan_period_days ?? 14;
+        $proposedDueDate = $origTxn->due_date->copy()->addDays($loanDays);
+
+        $newTxn = Transaction::create([
+            'member_id' => $origTxn->member_id,
+            'book_id' => $origTxn->book_id,
+            'issued_by' => auth()->id(),
+            'original_transaction_id' => $origTxn->id,
+            'action' => 'renew_request',
+            'status' => 'renew_requested',
+            'issued_date' => today(),
+            'due_date' => $proposedDueDate,
+            'fine' => 0,
+            'fine_paid' => false,
+            'notes' => "Renewal request for original TXN #{$origTxn->id} ({$origTxn->book->title})",
+            'max_renewals' => $origTxn->max_renewals,
+            'renewal_count' => $origTxn->renewal_count,
+        ]);
+
+        return back()->with('toast_success', "Renewal request submitted for '{$origTxn->book->title}'. Awaiting staff approval. Proposed due date: {$proposedDueDate->format('M j, Y')}");
+    }
+
+    public function resubmitRequest(Transaction $txn)
+    {
+        $this->ensureUser();
+
+        if ($txn->member_id !== auth()->id() || $txn->status !== 'rejected') {
+            abort(403);
         }
 
-        return back()->with('error', 'Renewal failed.');
+        $book = $txn->book;
+        if (!$book) {
+            return back()->with('error', 'Book information is missing.');
+        }
+
+        if (!$book->is_circulating) {
+            return back()->with('error', 'This book is not available for circulation.');
+        }
+
+        if (Transaction::where('member_id', $txn->member_id)
+            ->where('book_id', $book->id)
+            ->whereIn('status', ['active', 'overdue', 'pending', 'requested', 'renew_requested'])
+            ->exists()) {
+            return back()->with('error', 'You already have an active or pending request for this book.');
+        }
+
+        if (($book->available_copies ?? $book->copies) < 1) {
+            return $this->placeHold($book);
+        }
+
+        $loanDays = $book->category->loan_period_days ?? 14;
+        $dueDate = today()->addDays($loanDays);
+
+        DB::transaction(function () use ($txn, $book, $loanDays, $dueDate) {
+            $newTxn = Transaction::create([
+                'member_id' => $txn->member_id,
+                'book_id' => $book->id,
+                'issued_by' => auth()->id(),
+                'action' => 'checkout',
+                'status' => 'pending',
+                'issued_date' => today(),
+                'due_date' => $dueDate,
+                'fine' => 0,
+                'fine_paid' => false,
+                'notes' => trim("Resubmitted after rejection. Original request notes: " . ($txn->notes ?? 'No comment')),
+                'max_renewals' => 2,
+            ]);
+
+            ActivityLog::log(
+                auth()->id(),
+                'request',
+                "Resubmitted request for '{$book->title}' (TXN-{$newTxn->id}) after previous rejection",
+                'success'
+            );
+        });
+
+        return redirect()->route('portal.transactions')
+            ->with('toast_success', 'Your request has been resubmitted for staff approval.');
     }
 
     public function return(Request $request, Transaction $transaction)
@@ -267,16 +491,8 @@ class UserPortalController extends Controller
             return back()->with('error', 'This book cannot be returned.');
         }
 
-        $fine = 0;
-        if ($transaction->due_date && today()->gt($transaction->due_date)) {
-            $fine = today()->diffInDays($transaction->due_date) * Transaction::FINE_PER_DAY;
-        }
-
         $transaction->markReturned(false);
-
-        if (!$transaction->is_pending_fine) {
-            $transaction->book->increment('available_copies');
-        }
+        $transaction->book->increment('available_copies');
 
         return back()->with('toast_success', $transaction->is_pending_fine
             ? 'Book returned with fine pending. Please submit payment.'

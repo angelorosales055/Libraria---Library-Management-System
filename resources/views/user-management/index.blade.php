@@ -5,7 +5,7 @@
 <div class="page-header-row mb-6">
     <div>
         <h1 class="page-title">User Management</h1>
-        <p class="page-subtitle">Manage staff accounts and access roles</p>
+        <p class="page-subtitle">Manage staff accounts, members, and access roles</p>
     </div>
     <button class="btn btn-gold" onclick="openModal('addUserModal')">
         <i class="fas fa-user-plus"></i> Add Staff Account
@@ -15,12 +15,12 @@
 <div class="card mb-6">
     <div class="card-header">
         <span class="card-title">Staff Accounts</span>
-        <span class="badge badge-info">{{ $users->count() ?? 0 }} accounts</span>
+        <span class="badge badge-info">{{ $staffUsers->count() ?? 0 }} accounts</span>
     </div>
     <div class="card-body" style="padding:0">
-        @forelse($users ?? [] as $user)
+        @forelse($staffUsers ?? [] as $user)
         @php
-            $roleColors = ['admin'=>'var(--teal-dark)','librarian'=>'var(--teal-accent)','user'=>'#6a8a7a'];
+            $roleColors = ['admin'=>'var(--teal-dark)','librarian'=>'var(--teal-accent)'];
             $rc = $roleColors[$user->role] ?? 'var(--text-mid)';
             $initials = strtoupper(substr($user->name,0,2));
         @endphp
@@ -33,7 +33,7 @@
                 <div style="font-size:12px;color:var(--text-light)">{{ $user->email }}</div>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
-                <span class="badge {{ $user->role==='admin'?'badge-info':($user->role==='librarian'?'badge-success':'badge-gray') }}">
+                <span class="badge {{ $user->role==='admin'?'badge-info':'badge-success' }}">
                     {{ ucfirst($user->role) }}
                 </span>
                 <span class="badge {{ ($user->is_active??true)?'badge-success':'badge-danger' }}">
@@ -51,6 +51,73 @@
         </div>
         @empty
         <div style="text-align:center;padding:32px;color:var(--text-light)">No staff accounts found</div>
+        @endforelse
+    </div>
+</div>
+
+<div class="card mb-6">
+    <div class="card-header">
+        <span class="card-title">Active Members</span>
+        <span class="badge badge-info">{{ $activeMembers->count() ?? 0 }} members</span>
+    </div>
+    <div class="card-body" style="padding:0">
+        @forelse($activeMembers ?? [] as $member)
+        @php
+            $avatarColors = ['teal','gold','sage','rust','navy'];
+            $colorMap = ['teal'=>'#3d7a6e', 'gold'=>'#c9a84c', 'sage'=>'#8a9b87', 'rust'=>'#a8645f', 'navy'=>'#1a3a3a'];
+            $color = $colorMap[$avatarColors[$member->id % count($avatarColors)]] ?? '#6a8a7a';
+            $initials = strtoupper(substr($member->name,0,2));
+        @endphp
+        <div style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid rgba(0,0,0,0.05)">
+            <div style="width:40px;height:40px;border-radius:50%;background:{{ $color }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">
+                {{ $initials }}
+            </div>
+            <div style="flex:1">
+                <div style="font-size:14px;font-weight:600">{{ $member->name }}</div>
+                <div style="font-size:12px;color:var(--text-light)">{{ $member->member_id ?? 'MBR-'.str_pad($member->id,7,'0',STR_PAD_LEFT) }} · {{ ucfirst($member->type ?? 'member') }}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+                <span class="badge badge-success">Active</span>
+                <form method="POST" action="{{ route('users.destroy', $member) }}" style="display:inline"
+                      onsubmit="return confirm('Deactivate this member?')">
+                    @csrf @method('DELETE')
+                    <button class="btn btn-danger btn-xs">Deactivate</button>
+                </form>
+            </div>
+        </div>
+        @empty
+        <div style="text-align:center;padding:32px;color:var(--text-light)">No active members found</div>
+        @endforelse
+    </div>
+</div>
+
+<div class="card mb-6">
+    <div class="card-header">
+        <span class="card-title">Deactivated Members</span>
+        <span class="badge badge-danger">{{ $deactivatedMembers->count() ?? 0 }} members</span>
+    </div>
+    <div class="card-body" style="padding:0">
+        @forelse($deactivatedMembers ?? [] as $member)
+        @php
+            $avatarColors = ['teal','gold','sage','rust','navy'];
+            $colorMap = ['teal'=>'#3d7a6e', 'gold'=>'#c9a84c', 'sage'=>'#8a9b87', 'rust'=>'#a8645f', 'navy'=>'#1a3a3a'];
+            $color = $colorMap[$avatarColors[$member->id % count($avatarColors)]] ?? '#6a8a7a';
+            $initials = strtoupper(substr($member->name,0,2));
+        @endphp
+        <div style="display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid rgba(0,0,0,0.05);opacity:0.65">
+            <div style="width:40px;height:40px;border-radius:50%;background:{{ $color }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">
+                {{ $initials }}
+            </div>
+            <div style="flex:1">
+                <div style="font-size:14px;font-weight:600">{{ $member->name }}</div>
+                <div style="font-size:12px;color:var(--text-light)">{{ $member->member_id ?? 'MBR-'.str_pad($member->id,7,'0',STR_PAD_LEFT) }} · {{ ucfirst($member->type ?? 'member') }}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+                <span class="badge badge-danger">Deactivated</span>
+            </div>
+        </div>
+        @empty
+        <div style="text-align:center;padding:32px;color:var(--text-light)">No deactivated members</div>
         @endforelse
     </div>
 </div>

@@ -7,9 +7,14 @@
         <h1 class="page-title">Book Inventory</h1>
         <p class="page-subtitle">Full catalog with availability status</p>
     </div>
-    <a href="{{ route('reports.index') }}" class="btn btn-outline btn-sm">
-        <i class="fas fa-arrow-left"></i> Back
-    </a>
+    <div class="flex gap-2">
+        <a href="{{ route('reports.export', ['report' => 'inventory']) }}" class="btn btn-gold btn-sm">
+            <i class="fas fa-file-pdf"></i> Export PDF
+        </a>
+        <a href="{{ route('reports.index') }}" class="btn btn-outline btn-sm">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+    </div>
 </div>
 
 <div class="card">

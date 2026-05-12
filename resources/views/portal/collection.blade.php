@@ -8,6 +8,7 @@
             <p>Search and borrow from the library catalog.</p>
         </div>
     </div>
+
     <div class="filters-row">
         <form method="GET" action="{{ route('portal.collection') }}" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Search books, authors, ISBN..." class="filter-input">
@@ -27,7 +28,13 @@
 
     <div class="books-grid">
         @forelse($books as $book)
-        <div class="book-card">
+        <div class="book-card" data-book-details
+            data-book-title="{{ $book->title }}"
+            data-book-author="{{ $book->author }}"
+            data-book-description="{{ $book->description }}"
+            data-book-cover="{{ $book->cover_image ? asset('storage/'.$book->cover_image) : '' }}"
+            data-book-category="{{ $book->category?->name ?? 'General' }}"
+            data-book-isbn="{{ $book->isbn }}">
             @if($book->cover_image)
                 <img src="{{ asset('storage/'.$book->cover_image) }}" alt="{{ $book->title }}">
             @else
@@ -42,7 +49,7 @@
                     <span style="color: var(--muted); font-size:12px;">{{ $book->isbn }}</span>
                 </div>
                 @if($book->is_available)
-                    <button type="button" class="btn-sm" onclick="openBorrowModal({{ $book->id }}, '{{ addslashes($book->title) }}', '{{ addslashes($book->author) }}', '{{ $book->cover_image ? asset('storage/'.$book->cover_image) : '' }}', {{ $book->category?->loan_period_days ?? 14 }})">Borrow Book</button>
+                    <button type="button" class="btn-sm" onclick="openBorrowModal({{ $book->id }}, '{{ addslashes($book->title) }}', '{{ addslashes($book->author) }}', '{{ $book->cover_image ? asset('storage/'.$book->cover_image) : '' }}', {{ $book->category?->loan_period_days ?? 14 }})">Request Book</button>
                 @else
                     <form method="POST" action="{{ route('portal.borrow', $book) }}" style="display:inline">
                         @csrf
@@ -56,15 +63,15 @@
         @endforelse
     </div>
 
-    <div style="margin-top:24px;">{{ $books->links() }}</div>
+    <div style="margin-top:24px;">{{ $books->links('vendor.pagination.simple-custom') }}</div>
 </div>
 
 <div class="modal-overlay" id="borrowModal">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="borrowModalTitle">
         <div class="modal-header">
             <div>
-                <div class="modal-title" id="borrowModalTitle">Borrow Book</div>
-                <div id="borrowModalSubtitle" style="color:var(--muted);font-size:13px;margin-top:6px">Confirm your borrow request</div>
+                <div class="modal-title" id="borrowModalTitle">Request Book</div>
+                <div id="borrowModalSubtitle" style="color:var(--muted);font-size:13px;margin-top:6px">Confirm your request for staff approval</div>
             </div>
             <button type="button" class="modal-close" onclick="closeBorrowModal()">&times;</button>
         </div>
@@ -77,7 +84,7 @@
                     <div id="borrowModalDueDate" style="color:var(--muted);font-size:12px;margin-top:8px"></div>
                 </div>
             </div>
-            <label for="borrowDuration">Borrow Duration</label>
+            <label for="borrowDuration">Request Duration</label>
             <select id="borrowDuration" class="form-control">
                 <option value="3">3 days</option>
                 <option value="7">7 days</option>
@@ -87,11 +94,11 @@
             </select>
             <label for="borrowNotes">Notes (optional)</label>
             <input id="borrowNotes" type="text" class="form-control" placeholder="Add a note for this borrow">
-            <p style="margin-top:12px;color:var(--muted);font-size:13px">By clicking Confirm Borrow, you agree to return this book on time or face late fees.</p>
+            <p style="margin-top:12px;color:var(--muted);font-size:13px">By clicking Submit Request, you agree to return this book on time or face late fees.</p>
         </div>
         <div class="modal-footer">
             <button type="button" class="btn-outline" onclick="closeBorrowModal()">Cancel</button>
-            <button type="button" class="btn-primary" onclick="submitBorrowForm()">Confirm Borrow</button>
+            <button type="button" class="btn-primary" onclick="submitBorrowForm()">Submit Request</button>
         </div>
         <form id="borrowForm" method="POST" style="display:none" action="">
             @csrf

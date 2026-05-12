@@ -7,9 +7,14 @@
         <h1 class="page-title">Fines &amp; Collection</h1>
         <p class="page-subtitle">Fine ledger and payment records</p>
     </div>
-    <a href="{{ route('reports.index') }}" class="btn btn-outline btn-sm">
-        <i class="fas fa-arrow-left"></i> Back
-    </a>
+    <div class="flex gap-2">
+        <a href="{{ route('reports.export', ['report' => 'fines']) }}" class="btn btn-gold btn-sm">
+            <i class="fas fa-file-pdf"></i> Export PDF
+        </a>
+        <a href="{{ route('reports.index') }}" class="btn btn-outline btn-sm">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+    </div>
 </div>
 
 @php
@@ -59,7 +64,18 @@
                 <tr>
                     <td><code style="font-size:11px">TXN-{{ str_pad($txn->id,4,'0',STR_PAD_LEFT) }}</code></td>
                     <td>{{ $txn->member?->name ?? '—' }}</td>
-                    <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $txn->book?->title ?? '—' }}</td>
+                    <td style="max-width:140px;">
+  <div style="display:flex;align-items:center;gap:8px;">
+    @if($txn->book?->cover_image)
+      <img src="{{ asset('storage/' . $txn->book->cover_image) }}" alt="Book cover" style="width:28px;height:40px;flex-shrink:0;object-fit:cover;border-radius:4px;">
+    @else
+      <div style="width:28px;height:40px;background:rgba(0,0,0,0.08);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#999;">📖</div>
+    @endif
+    <div style="min-width:0;flex:1;">
+      <div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ $txn->book?->title ?? '—' }}">{{ $txn->book?->title ?? '—' }}</div>
+    </div>
+  </div>
+                    </td>
                     <td>{{ $txn->due_date?->format('M j, Y') }}</td>
                     <td>{{ $txn->returned_date?->format('M j, Y') ?? '<span style="color:var(--danger)">Not returned</span>' }}</td>
                     <td>

@@ -71,7 +71,6 @@
     <div class="card" id="memberDetailPanel">
         <div class="card-header" style="justify-content:space-between">
             <span class="card-title">Member Details</span>
-            <a href="#" id="editMemberLink" class="btn btn-outline btn-sm" style="display:none">Edit</a>
         </div>
         <div class="card-body" id="memberDetailContent" style="text-align:center;padding:40px;color:var(--text-light)">
             <i class="fas fa-user-circle" style="font-size:40px;margin-bottom:12px;display:block"></i>
@@ -181,9 +180,6 @@ function showMemberDetail(id) {
             <div><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;font-weight:600">Outstanding Fine</div><div style="font-size:14px;font-weight:600;color:${m.outstanding_fine>0?'var(--danger)':'var(--success)'}">${m.outstanding_fine>0?'₱'+m.outstanding_fine.toFixed(2):'₱0.00'}</div></div>
             <div><div style="font-size:11px;color:var(--text-light);text-transform:uppercase;font-weight:600">Member Since</div><div style="font-size:14px;font-weight:600">${m.created_at ? new Date(m.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'}</div></div>
         </div>`;
-
-    document.getElementById('editMemberLink').href = `/members/${id}/edit`;
-    document.getElementById('editMemberLink').style.display = '';
 }
 </script>
 @endpush

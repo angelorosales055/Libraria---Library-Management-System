@@ -53,10 +53,25 @@ class User extends Authenticatable
 
     public function getOutstandingFineAttribute(): float
     {
-        return $this->transactions()
+        $storedFines = $this->transactions()
             ->where('fine_paid', false)
             ->where('fine', '>', 0)
             ->sum('fine');
+
+        $computedOverdue = $this->transactions()
+            ->where('fine_paid', false)
+            ->where(function ($query) {
+                $query->whereNull('fine')
+                      ->orWhere('fine', 0);
+            })
+            ->whereNull('returned_date')
+            ->whereNotNull('due_date')
+            ->whereIn('status', ['active', 'overdue'])
+            ->whereDate('due_date', '<', today())
+            ->get()
+            ->sum(fn ($txn) => $txn->computed_fine);
+
+        return round($storedFines + $computedOverdue, 2);
     }
 
     public static function generateMemberId(): string
@@ -97,8 +112,15 @@ class User extends Authenticatable
 
     public function getCanBorrowAttribute(): bool
     {
+        $hasDamageFines = $this->transactions()
+            ->where('fine_paid', false)
+            ->where('fine', '>', 0)
+            ->where('action', 'damage_return')
+            ->exists();
+
         return !$this->is_suspended
             && !$this->has_overdue_books
+            && !$hasDamageFines
             && $this->outstanding_fine < 5.00
             && $this->total_borrowed < $this->borrowing_limit;
     }
