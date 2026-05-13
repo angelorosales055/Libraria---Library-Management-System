@@ -106,7 +106,7 @@ class Transaction extends Model
             return $this->fine;
         }
 
-        if (!in_array($this->status, ['active', 'overdue', 'damage_return'], true)) {
+        if (!in_array($this->status, ['active', 'overdue'], true)) {
             return 0;
         }
 
@@ -167,7 +167,7 @@ class Transaction extends Model
 
     public function getIsPendingFineAttribute(): bool
     {
-        if ($this->fine > 0 && $this->fine_paid === false && in_array($this->status, ['active', 'overdue', 'damage_return', 'damaged', 'returned'], true)) {
+        if ($this->fine > 0 && $this->fine_paid === false && in_array($this->status, ['active', 'overdue', 'damaged', 'returned'], true)) {
             return true;
         }
 
@@ -283,7 +283,7 @@ class Transaction extends Model
             'returned_date' => today(),
             'fine' => $fee,
             'fine_paid' => false,
-            'status' => 'damage_return',
+            'status' => 'damaged',
             'action' => 'damage_return',
             'notes' => trim(($this->notes ?? '') . "\n[DAMAGE: {$reason}]"),
         ]);
@@ -293,7 +293,7 @@ class Transaction extends Model
 
     public function getIsDamageFineAttribute(): bool
     {
-        return $this->action === 'damage_return' || $this->status === 'damaged' || $this->status === 'damage_return';
+        return $this->action === 'damage_return' || $this->status === 'damaged';
     }
 }
 
